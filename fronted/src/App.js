@@ -21,6 +21,20 @@ const CATEGORIES = [
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
 
+// --- Helper Function for Colors (Fixed Syntax Error) ---
+const getCategoryColor = (category) => {
+  const colorMap = {
+    'Food': 'bg-orange-100 text-orange-800',
+    'Housing': 'bg-blue-100 text-blue-800',
+    'Transportation': 'bg-yellow-100 text-yellow-800',
+    'Utilities': 'bg-purple-100 text-purple-800',
+    'Insurance': 'bg-green-100 text-green-800',
+    'Health': 'bg-red-100 text-red-800',
+    'Entertainment': 'bg-pink-100 text-pink-800',
+  };
+  return colorMap[category] || 'bg-slate-100 text-slate-800';
+};
+
 // --- Components ---
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>
@@ -35,7 +49,7 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// --- API URL (Centralized to avoid mistakes) ---
+// --- API URL ---
 const API_URL = 'https://expense-tracker-backend-7vov.onrender.com/expenses';
 
 export default function App() {
@@ -49,10 +63,9 @@ export default function App() {
     amount: ''
   });
 
-  // Fetch expenses from backend
+  // Fetch expenses
   const fetchExpenses = async () => {
     try {
-      // FIX 1: Use the full API URL including '/expenses'
       const res = await fetch(API_URL);
       const data = await res.json();
       setExpenses(data);
@@ -80,7 +93,6 @@ export default function App() {
     };
 
     try {
-      // FIX 2: Replaced localhost with API_URL
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,9 +109,7 @@ export default function App() {
 
   const handleDelete = async (id) => {
     try {
-      // FIX 2: Replaced localhost with API_URL
       await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      // FIX 3: Use _id instead of id for filtering
       setExpenses(expenses.filter(e => e._id !== id));
     } catch(err) { 
       console.error('Error deleting expense:', err);
@@ -282,4 +292,127 @@ export default function App() {
                     placeholder="e.g. Weekly Groceries"
                     value={formData.description}
                     onChange={e => setFormData({...formData, description: e.target.value})}
-                    className="w-full rounded-lg border-slate-300 border p-2.5 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border
+                    className="w-full rounded-lg border-slate-300 border p-2.5 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Transaction
+                </button>
+              </form>
+            </Card>
+
+            {/* Pie Chart Section */}
+            <Card className="p-6 h-[400px] flex flex-col">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <PieChartIcon className="w-5 h-5 text-blue-600" />
+                Breakdown
+              </h2>
+              <div className="flex-1 w-full min-h-0">
+                {expenses.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {stats.chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value)} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                    <PieChartIcon className="w-12 h-12 mb-2 opacity-20" />
+                    <p className="text-sm italic">Add expenses to see the chart</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Column: Transaction List */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Monthly Stats */}
+            <Card className="p-6">
+               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-violet-600" />
+                Monthly History
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {Object.entries(stats.byMonth)
+                 .sort(([a], [b]) => b.localeCompare(a)) 
+                 .slice(0, 4) 
+                 .map(([month, total]) => (
+                   <div key={month} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                     <div className="text-xs text-slate-500 uppercase font-semibold">{month}</div>
+                     <div className="text-lg font-bold text-slate-800">{formatCurrency(total)}</div>
+                   </div>
+                 ))}
+                 {expenses.length === 0 && (
+                  <div className="col-span-full text-slate-400 text-sm text-center">Add expenses to see monthly stats</div>
+                 )}
+              </div>
+            </Card>
+
+            {/* Transactions Table */}
+            <Card className="overflow-hidden">
+              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <ArrowUpRight className="w-5 h-5 text-slate-600" />
+                  Recent Transactions
+                </h2>
+                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{expenses.length} entries</span>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-600">
+                  <thead className="bg-slate-50 text-slate-700 font-semibold uppercase text-xs">
+                    <tr>
+                      <th className="px-6 py-3">Date</th>
+                      <th className="px-6 py-3">Category</th>
+                      <th className="px-6 py-3">Description</th>
+                      <th className="px-6 py-3 text-right">Amount</th>
+                      <th className="px-6 py-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {expenses.map((expense) => (
+                      <tr key={expense._id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{expense.date ? expense.date.substring(0,10) : ''}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(expense.category)}`}>
+                            {expense.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 max-w-xs truncate" title={expense.description}>{expense.description}</td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-900">{formatCurrency(expense.amount)}</td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            onClick={() => handleDelete(expense._id)}
+                            className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {expenses.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                          <p>No transactions found.</p>
+                          <p className="text-xs mt
