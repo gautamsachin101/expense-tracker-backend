@@ -4,12 +4,7 @@ const mongoose = require('mongoose');
 
 // Initialize App
 const app = express();
-
-// --- CRITICAL FIX START ---
-// 1. Use the port Render gives us (process.env.PORT)
-// 2. If no port is given (localhost), use 5000
 const PORT = process.env.PORT || 5000;
-// --- CRITICAL FIX END ---
 
 // Middleware
 app.use(cors());
@@ -18,7 +13,6 @@ app.use(express.json());
 // MongoDB Connection
 const connectDB = async () => {
   try {
-    // Connect using the MONGO_URI from Render Environment Variables
     const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
@@ -26,13 +20,13 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-// Connect to Database
 connectDB();
 
-// Schema & Model
+// --- SCHEMA FIX ---
+// Updated to match what the Frontend sends (description, category, date)
 const expenseSchema = new mongoose.Schema({
-  title: String,
+  description: String,  
+  category: String,
   amount: Number,
   date: { type: Date, default: Date.now }
 });
@@ -46,7 +40,7 @@ app.get('/', (req, res) => {
 
 app.get('/expenses', async (req, res) => {
   try {
-    const expenses = await Expense.find();
+    const expenses = await Expense.find().sort({ date: -1 }); // Sort by newest first
     res.json(expenses);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -55,8 +49,16 @@ app.get('/expenses', async (req, res) => {
 
 app.post('/expenses', async (req, res) => {
   try {
-    const { title, amount } = req.body;
-    const newExpense = new Expense({ title, amount });
+    // Extract the correct fields from Frontend
+    const { description, category, amount, date } = req.body;
+    
+    const newExpense = new Expense({ 
+      description, 
+      category, 
+      amount, 
+      date 
+    });
+    
     await newExpense.save();
     res.status(201).json(newExpense);
   } catch (error) {
@@ -73,9 +75,6 @@ app.delete('/expenses/:id', async (req, res) => {
     }
 });
 
-// --- CRITICAL FIX START ---
-// Bind to 0.0.0.0 to ensure Render can detect the open port
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
-// --- CRITICAL FIX END ---
