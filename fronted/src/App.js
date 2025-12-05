@@ -21,7 +21,7 @@ const CATEGORIES = [
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
 
-// --- Helper Function for Colors (Fixed Syntax Error) ---
+// --- Helper Function for Colors ---
 const getCategoryColor = (category) => {
   const colorMap = {
     'Food': 'bg-orange-100 text-orange-800',
@@ -415,4 +415,17 @@ export default function App() {
                       <tr>
                         <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                           <p>No transactions found.</p>
-                          <p className="text-xs mt
+                          <p className="text-xs mt-1">Fill out the form to add your first expense.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
