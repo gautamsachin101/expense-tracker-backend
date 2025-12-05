@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, TrendingUp, Calendar, Download, DollarSign, ArrowUpRight, FileSpreadsheet, PieChart as PieChartIcon } from 'lucide-react';
+import { Plus, Trash2, Calendar, Download, FileSpreadsheet, PieChart as PieChartIcon } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const CATEGORIES = ['Housing', 'Food', 'Transportation', 'Utilities', 'Insurance', 'Health', 'Entertainment', 'Other'];
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
 
-// Helper for colors
 const getCategoryColor = (category) => {
   const map = {
     'Food': 'bg-orange-100 text-orange-800',
@@ -19,7 +18,6 @@ const getCategoryColor = (category) => {
   return map[category] || 'bg-slate-100 text-slate-800';
 };
 
-// Components
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white rounded-xl shadow-sm border border-slate-200 ${className}`}>{children}</div>
 );
