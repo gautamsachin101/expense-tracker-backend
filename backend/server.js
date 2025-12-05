@@ -2,89 +2,80 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
+// Initialize App
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// --- ⚠️ PASTE YOUR CONNECTION STRING HERE ⚠️ ---
-// Replace <db_password> with your actual password!
-const MONGO_URI = "mongodb+srv://attrixrishi:123password@cluster0.uq9tcbc.mongodb.net/?appName=Cluster0";
+// --- CRITICAL FIX START ---
+// 1. Use the port Render gives us (process.env.PORT)
+// 2. If no port is given (localhost), use 5000
+const PORT = process.env.PORT || 5000;
+// --- CRITICAL FIX END ---
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// --- DATABASE CONNECTION ---
-// This connects your app to the cloud
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB Connected!'))
-  .catch(err => console.error('❌ MongoDB Connection Error:', err));
+// MongoDB Connection
+const connectDB = async () => {
+  try {
+    // Connect using the MONGO_URI from Render Environment Variables
+    const conn = await mongoose.connect(process.env.MONGO_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
 
-// --- DATA MODEL ---
-// This defines what an expense looks like in the database
+// Connect to Database
+connectDB();
+
+// Schema & Model
 const expenseSchema = new mongoose.Schema({
-  date: String,
-  category: String,
-  description: String,
-  amount: Number
+  title: String,
+  amount: Number,
+  date: { type: Date, default: Date.now }
 });
 
 const Expense = mongoose.model('Expense', expenseSchema);
 
-// --- ROUTES ---
+// Routes
+app.get('/', (req, res) => {
+    res.send('API is running!');
+});
 
-// 1. GET all expenses
 app.get('/expenses', async (req, res) => {
   try {
     const expenses = await Expense.find();
-    // Transform _id to id for the frontend
-    const formatted = expenses.map(e => ({
-      id: e._id,
-      date: e.date,
-      category: e.category,
-      description: e.description,
-      amount: e.amount
-    }));
-    res.json(formatted);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.json(expenses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
-// 2. ADD a new expense
 app.post('/expenses', async (req, res) => {
   try {
-    const newExpense = new Expense({
-      date: req.body.date,
-      category: req.body.category,
-      description: req.body.description,
-      amount: req.body.amount
-    });
-    const savedExpense = await newExpense.save();
-    
-    // Return the saved object
-    res.json({
-      id: savedExpense._id,
-      date: savedExpense.date,
-      category: savedExpense.category,
-      description: savedExpense.description,
-      amount: savedExpense.amount
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const { title, amount } = req.body;
+    const newExpense = new Expense({ title, amount });
+    await newExpense.save();
+    res.status(201).json(newExpense);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 
-// 3. DELETE an expense
 app.delete('/expenses/:id', async (req, res) => {
-  try {
-    await Expense.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    try {
+        await Expense.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Expense deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
-// Add '0.0.0.0' as the second argument
+// --- CRITICAL FIX START ---
+// Bind to 0.0.0.0 to ensure Render can detect the open port
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
+// --- CRITICAL FIX END ---
